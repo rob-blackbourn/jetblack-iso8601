@@ -24,13 +24,13 @@ converted to a string with `datetime_to_iso8601`.
 
 
 ```python
-from jetblack_iso8601.duration import (
+from jetblack_iso8601 import (
     iso8601_to_timedelta,
     timedelta_to_iso8601
 )
 
-duration = 'P3Y2M1DT12H11M10S'
-value = iso8601_to_timedelta(duration)
+text = 'P3Y2M1DT12H11M10S'
+value = iso8601_to_timedelta(text)
 roundtrip = timedelta_to_iso8601(value)
-assert roundtrip == duration
+assert roundtrip == text
 ```
