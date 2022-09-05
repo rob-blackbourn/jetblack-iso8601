@@ -1,6 +1,6 @@
 """Tests for JSON serialization"""
 
-from datetime import timezone, timedelta
+from datetime import datetime, timezone, timedelta
 
 from jetblack_iso8601 import (
     iso8601_to_datetime,
@@ -44,5 +44,16 @@ def test_tz_offset():
 def test_tz_offset_0():
     """Test for timezone offset"""
     timestamp = iso8601_to_datetime('2014-02-01T09:28:56.321+00:00')
-    assert timestamp.timetuple() == (2014, 2, 1, 9, 28, 56, 5, 32, -1)
-    assert timestamp.tzinfo == timezone(timedelta(hours=0))
+    assert timestamp == datetime(
+        2014, 2, 1, 9, 28, 56, 321000,
+        timezone(timedelta(hours=0))
+    )
+
+
+def test_nanoseconds():
+    """Test for nanoseconds"""
+    timestamp = iso8601_to_datetime('2014-02-01T09:28:56.1234567-05:00')
+    assert timestamp == datetime(
+        2014, 2, 1, 9, 28, 56, 123456,
+        timezone(timedelta(hours=-5))
+    )
