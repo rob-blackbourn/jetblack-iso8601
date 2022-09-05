@@ -32,9 +32,21 @@ DATETIME_FORMATS: Tuple[DateTimeFormat, ...] = (
     (
         "%Y-%m-%dT%H:%M:%S.%f%z",
         re.compile(
-            r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+[+-]\d{2}:\d{2}$'),
-        lambda s: s[0:-3] + s[-2:]
-    )
+            r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{2}:\d{2}$'),
+        lambda s: s[:23] + s[-6:-3] + s[-2:]
+    ),
+    (
+        "%Y-%m-%dT%H:%M:%S.%f%z",
+        re.compile(
+            r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}[+-]\d{2}:\d{2}$'),
+        lambda s: s[:26] + s[-6:-3] + s[-2:]
+    ),
+    (
+        "%Y-%m-%dT%H:%M:%S.%f%z",
+        re.compile(
+            r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6,9}[+-]\d{2}:\d{2}$'),
+        lambda s: s[:26] + s[-6:-3] + s[-2:]
+    ),
 )
 
 
