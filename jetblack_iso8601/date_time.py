@@ -72,6 +72,7 @@ def datetime_to_iso8601(timestamp: datetime) -> str:
     Returns:
         str: The stringified ISO 8601 version of the timestamp
     """
+    # pylint: disable=consider-using-f-string
     date_part = "{year:04d}-{month:02d}-{day:02d}".format(
         year=timestamp.year, month=timestamp.month, day=timestamp.day,
     )
@@ -79,14 +80,15 @@ def datetime_to_iso8601(timestamp: datetime) -> str:
         hour=timestamp.hour, minute=timestamp.minute, second=timestamp.second,
         millis=timestamp.microsecond // 1000
     )
+    # pylint: enable=consider-using-f-string
 
     utcoffset = timestamp.utcoffset()
     if utcoffset is None or timestamp.tzinfo is timezone.utc:
         return f"{date_part}T{time_part}Z"
-    else:
-        tz_seconds = utcoffset.total_seconds()
-        tz_sign = '-' if tz_seconds < 0 else '+'
-        tz_minutes = int(abs(tz_seconds)) // 60
-        tz_hours = tz_minutes // 60
-        tz_minutes %= 60
-        return f"{date_part}T{time_part}{tz_sign}{tz_hours:02d}:{tz_minutes:02d}"
+
+    tz_seconds = utcoffset.total_seconds()
+    tz_sign = '-' if tz_seconds < 0 else '+'
+    tz_minutes = int(abs(tz_seconds)) // 60
+    tz_hours = tz_minutes // 60
+    tz_minutes %= 60
+    return f"{date_part}T{time_part}{tz_sign}{tz_hours:02d}:{tz_minutes:02d}"
