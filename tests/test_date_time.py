@@ -13,7 +13,7 @@ def test_roundtrip():
     for text in [
             '2014-01-01T23:28:56.782Z',
             '2014-02-01T09:28:56.321-10:00',
-            '2014-02-01T09:28:56.321+00:00'
+            '2014-02-01T09:28:56.321+06:00'
     ]:
         timestamp = iso8601_to_datetime(text)
         roundtrip = datetime_to_iso8601(timestamp)
@@ -24,14 +24,14 @@ def test_zulu_tz_winter():
     """Test for the zulu timezone"""
     timestamp = iso8601_to_datetime('2014-01-01T23:28:56.782Z')
     assert timestamp.timetuple() == (2014, 1, 1, 23, 28, 56, 2, 1, -1)
-    assert timestamp.tzinfo is None
+    assert timestamp.tzinfo is timezone.utc
 
 
 def test_zulu_tz_summer():
     """Test for the zulu timezone"""
     timestamp = iso8601_to_datetime('2014-08-01T23:28:56.782Z')
     assert timestamp.timetuple() == (2014, 8, 1, 23, 28, 56, 4, 213, -1)
-    assert timestamp.tzinfo is None
+    assert timestamp.tzinfo is timezone.utc
 
 
 def test_tz_offset():
@@ -57,3 +57,20 @@ def test_nanoseconds():
         2014, 2, 1, 9, 28, 56, 123456,
         timezone(timedelta(hours=-5))
     )
+
+
+def test_seconds():
+    """Test for seconds"""
+    timestamp = iso8601_to_datetime('2000-01-31T12:15:32.00+00:00')
+    assert timestamp == datetime(
+        2000, 1, 31, 12, 15, 32, 0,
+        timezone(timedelta(hours=0))
+    )
+
+
+def test_reverse_roundtrip():
+    """Test roundtrip starting with datetime object"""
+    expected = datetime(2000, 1, 31, 12, 15, 32).astimezone(timezone.utc)
+    text = datetime_to_iso8601(expected)
+    actual = iso8601_to_datetime(text)
+    assert actual == expected
