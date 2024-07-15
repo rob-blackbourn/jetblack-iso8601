@@ -1,53 +1,13 @@
 """Serialization"""
 
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import re
-from typing import (
-    Callable,
-    Optional,
-    Pattern,
-    Tuple
-)
+from typing import Optional
 
-DATETIME_ZULU_REGEX = re.compile(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$')
-
-DateTimeFormat = Tuple[str, Pattern, Optional[Callable[[str], str]]]
-
-DATETIME_FORMATS: Tuple[DateTimeFormat, ...] = (
-    (
-        "%Y-%m-%dT%H:%M:%SZ",
-        re.compile(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$'),
-        None
-    ),
-    (
-        "%Y-%m-%dT%H:%M:%S.%fZ",
-        re.compile(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z$'),
-        None
-    ),
-    (
-        "%Y-%m-%dT%H:%M:%S%z",
-        re.compile(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$'),
-        lambda s: s[0:-3] + s[-2:]
-    ),
-    (
-        "%Y-%m-%dT%H:%M:%S.%f%z",
-        re.compile(
-            r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{2}:\d{2}$'),
-        lambda s: s[:23] + s[-6:-3] + s[-2:]
-    ),
-    (
-        "%Y-%m-%dT%H:%M:%S.%f%z",
-        re.compile(
-            r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}[+-]\d{2}:\d{2}$'),
-        lambda s: s[:26] + s[-6:-3] + s[-2:]
-    ),
-    (
-        "%Y-%m-%dT%H:%M:%S.%f%z",
-        re.compile(
-            r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6,9}[+-]\d{2}:\d{2}$'),
-        lambda s: s[:26] + s[-6:-3] + s[-2:]
-    ),
-)
+TZ_PATTERN = r'(?P<zulu>Z)|((?P<tz_sign>[+-])(?P<tz_hours>\d{2}):?(?P<tz_minutes>\d{2}))'
+TIME_PATTERN = r'(?P<hours>\d{2}):(?P<minutes>\d{2}):(?P<seconds>\d{2})(\.(?P<fractions>\d+))?'
+DATE_PATTERN = r'(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})'
+PATTERN = re.compile(f'^{DATE_PATTERN}(T{TIME_PATTERN}({TZ_PATTERN})?)?$')
 
 
 def iso8601_to_datetime(value: str) -> Optional[datetime]:
@@ -60,11 +20,47 @@ def iso8601_to_datetime(value: str) -> Optional[datetime]:
         Optional[datetime]: A timestamp if the value could be parsed, otherwise
             None.
     """
-    for fmt, pattern, transform in DATETIME_FORMATS:
-        if pattern.match(value):
-            text = transform(value) if transform else value
-            return datetime.strptime(text, fmt)
-    return None
+    match = PATTERN.match(value)
+    if match is None:
+        return None
+
+    parts = match.groupdict()
+
+    year, month, day = (
+        int(parts['year']), int(parts['month']), int(parts['day'])
+    )
+
+    hour, minute, second = (
+        (0, 0, 0) if parts['hours'] is None
+        else (
+            int(parts['hours']), int(parts['minutes']), int(parts['seconds'])
+        )
+    )
+
+    microsecond = (
+        0 if parts['fractions'] is None
+        else int(parts['fractions'][:6].ljust(6, '0'))
+    )
+
+    if parts['zulu']:
+        tzinfo = timezone.utc
+    elif parts['tz_sign']:
+        offset = timedelta(
+            hours=int(parts['tz_hours']),
+            minutes=int(parts['tz_minutes'])
+        )
+        tzinfo = (
+            timezone(offset) if parts['tz_sign'] == '+'
+            else timezone(-offset)
+        )
+    else:
+        tzinfo = None
+
+    return datetime(
+        year, month, day,
+        hour, minute, second, microsecond,
+        tzinfo
+    )
 
 
 def datetime_to_iso8601(timestamp: datetime) -> str:
@@ -85,7 +81,7 @@ def datetime_to_iso8601(timestamp: datetime) -> str:
     )
 
     utcoffset = timestamp.utcoffset()
-    if utcoffset is None:
+    if utcoffset is None or timestamp.tzinfo is timezone.utc:
         return f"{date_part}T{time_part}Z"
     else:
         tz_seconds = utcoffset.total_seconds()
