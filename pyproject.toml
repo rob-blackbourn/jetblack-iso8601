@@ -75,3 +75,7 @@ disable = [
     "use-implicit-booleaness-not-comparison-to-zero",
     "missing-module-docstring",
 ]
+
+# autopep8
+[tool.autopep8]
+max_line_length = 120
